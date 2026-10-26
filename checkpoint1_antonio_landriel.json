@@ -1,0 +1,179 @@
+{
+  "name": "Checkpoint 1 - Agente de atención",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a1",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "d7721f36-3685-438a-aa87-2ba04b5b33c0"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# ROL\nSos el Asistente de Atención Comercial de una tienda online de decoración (cuadros, espejos, alfombras, textiles y objetos decorativos).\n\n# ÁMBITO\nRespondés consultas de clientes sobre los productos del catálogo: disponibilidad, precio, medidas, materiales, colores y tiempo de despacho. No tenés acceso a pedidos, pagos ni envíos en curso.\n\n# OBJETIVO\nDar información precisa y basada en el catálogo para que el cliente pueda decidir su compra, y derivar al equipo todo lo que excede tu alcance.\n\n# REGLAS\n1. Para cualquier dato de producto, consultá siempre la herramienta \"Consultar catálogo\". Nunca respondas de memoria.\n2. Si el producto no figura en el catálogo, informalo y ofrecé alternativas de la misma categoría.\n3. No inventes precios, stock, medidas ni plazos.\n4. Respondé de forma breve, cordial y clara.\n5. No tenés permitido: otorgar descuentos, tomar pedidos o pagos, modificar compras, prometer fechas exactas de entrega ni responder temas ajenos a la tienda.\n\n# ESCALAMIENTO\nDerivá al equipo de atención cuando el cliente:\n- presente un reclamo o problema con una compra,\n- consulte por un pedido realizado o su envío,\n- solicite descuentos, compras mayoristas o productos a medida,\n- pida hablar con una persona.\nEn esos casos respondé: \"Te derivo con nuestro equipo de atención, que te va a responder a la brevedad.\"",
+          "maxIterations": 6,
+          "returnIntermediateSteps": true,
+          "enableStreaming": false
+        }
+      },
+      "id": "a2",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "options": {}
+      },
+      "id": "a3",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        224
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "qq8XXUzB13fMxLVL",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Consulta el catálogo de productos de la tienda. Contiene, por producto: nombre, categoría, medidas, material, color, precio en pesos, stock disponible y días de despacho.\n\nUsar esta herramienta SIEMPRE que el cliente pregunte por:\n- si un producto existe o está disponible,\n- precio de uno o varios productos,\n- medidas, materiales o colores,\n- cuánto tarda en despacharse,\n- opciones dentro de una categoría (por ejemplo, \"qué espejos tienen\"),\n- alternativas cuando un producto no tiene stock.\n\nNo usar esta herramienta para saludos, reclamos, consultas sobre pedidos ya realizados, pagos o temas ajenos a los productos; esos casos se responden o se derivan según las reglas del sistema.\n\nSi un producto tiene stock 0, informar que no está disponible y sugerir otro de la misma categoría.",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1bWV4QNa7koz6LRiJjUmZ212iMuJ6cYEpuCRLO2pWbqc",
+          "cachedResultName": "Catálogo tienda"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Catalogo"
+        },
+        "options": {}
+      },
+      "id": "a4",
+      "name": "Consultar catálogo",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        224
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "e1UXUt5TQyKATp7V",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "antoniolandriel@gmail.com",
+        "subject": "=Log agente de atención – {{ $now.format('dd/MM/yyyy HH:mm') }}",
+        "emailType": "text",
+        "message": "=PREGUNTA DEL CLIENTE:\n{{ $('When chat message received').item.json.chatInput }}\n\nRESPUESTA DEL AGENTE:\n{{ $json.output }}\n\nEXECUTION LOG (pasos intermedios):\n{{ JSON.stringify($json.intermediateSteps, null, 2) }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a5",
+      "name": "Log de observabilidad (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        0
+      ],
+      "webhookId": "5c40e53c-3a81-4efb-9bfc-a2090e18c1e4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "WxK6MZFCmp09ixxN",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar catálogo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Log de observabilidad (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3380171b-1b2a-4f52-bbed-e20d6e706e50",
+  "meta": {
+    "instanceId": "4b682dac2e7655374784491e63131e5527d0a6ee9d0b0f79e44b75430ad70ba0"
+  },
+  "nodeGroups": [],
+  "id": "gOgfmXBpm4KKn4e7",
+  "tags": []
+}
